@@ -178,27 +178,41 @@
 
         .contact-info {
             margin: 20px 0;
-            padding: 15px;
+            padding: 20px;
             background: rgba(102, 126, 234, 0.05);
-            border-radius: 10px;
+            border-radius: 15px;
             display: none;
+            border: 1px solid rgba(102, 126, 234, 0.1);
         }
 
         .contact-info.show {
             display: block;
         }
 
+        .contact-serial {
+            font-size: 14px;
+            color: #888;
+            font-weight: 500;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .contact-name {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 600;
             color: #333;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
 
         .contact-number {
             font-size: 18px;
             color: #666;
             font-family: 'Courier New', monospace;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
@@ -224,6 +238,7 @@
         </div>
 
         <div class="contact-info" id="contactInfo">
+            <div class="contact-serial" id="selectedSerial"></div>
             <div class="contact-name" id="selectedName"></div>
             <div class="contact-number" id="selectedNumber"></div>
         </div>
@@ -248,6 +263,7 @@
         const contactInfo = document.getElementById('contactInfo');
         const selectedName = document.getElementById('selectedName');
         const selectedNumber = document.getElementById('selectedNumber');
+        const selectedSerial = document.getElementById('selectedSerial');
 
         csvFile.addEventListener('change', handleFileSelect);
         contactSelect.addEventListener('change', handleContactSelect);
@@ -403,7 +419,7 @@
                         
                         const option = document.createElement('option');
                         option.value = validContacts;
-                        option.textContent = `${name} - ${mobile}`;
+                        option.textContent = `${validContacts + 1}. ${name} - ${mobile}`;
                         contactSelect.appendChild(option);
                         validContacts++;
                     }
@@ -430,6 +446,7 @@
 
             const contact = contactsData[selectedIndex];
             if (contact) {
+                selectedSerial.textContent = `Contact #${parseInt(selectedIndex) + 1}`;
                 selectedName.textContent = contact.name;
                 selectedNumber.textContent = contact.mobile;
                 contactInfo.classList.add('show');
