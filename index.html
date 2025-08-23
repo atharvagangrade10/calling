@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Phone Dialer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px dashed #667eea;
+            border-radius: 15px;
+            background: rgba(102, 126, 234, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #764ba2;
+            background: rgba(118, 75, 162, 0.05);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: transform 0.3s ease;
+        }
+
+        .file-input-wrapper:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .dropdown-section {
+            margin-bottom: 30px;
+        }
+
+        select {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e1e1;
+            border-radius: 15px;
+            font-size: 16px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        select:disabled {
+            background-color: #f5f5f5;
+            cursor: not-allowed;
+        }
+
+        .dial-button {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dial-button:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(76, 175, 80, 0.4);
+        }
+
+        .dial-button:active:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
+        .dial-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .phone-icon {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .status-message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .status-error {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+
+        .contact-info {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 10px;
+            display: none;
+        }
+
+        .contact-info.show {
+            display: block;
+        }
+
+        .contact-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .contact-number {
+            font-size: 18px;
+            color: #666;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Phone Dialer</h1>
+        
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <input type="file" id="csvFile" accept=".csv,.xlsx,.xls" />
+                📁 Choose CSV/Excel File
+            </div>
+            <p style="margin-top: 10px; color: #666; font-size: 14px;">
+                Supports CSV and Excel files (.csv, .xlsx, .xls)<br>
+                Format: Name, Mobile No (or Phone Number, Contact, etc.)
+            </p>
+        </div>
+
+        <div class="dropdown-section">
+            <select id="contactSelect" disabled>
+                <option value="">Select a contact to dial...</option>
+            </select>
+        </div>
+
+        <div class="contact-info" id="contactInfo">
+            <div class="contact-name" id="selectedName"></div>
+            <div class="contact-number" id="selectedNumber"></div>
+        </div>
+
+        <button class="dial-button" id="dialButton" disabled>
+            <svg class="phone-icon" viewBox="0 0 24 24">
+                <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+            </svg>
+            Dial Number
+        </button>
+
+        <div id="statusMessage" class="status-message" style="display: none;"></div>
+    </div>
+
+    <script>
+        let contactsData = [];
+
+        const csvFile = document.getElementById('csvFile');
+        const contactSelect = document.getElementById('contactSelect');
+        const dialButton = document.getElementById('dialButton');
+        const statusMessage = document.getElementById('statusMessage');
+        const contactInfo = document.getElementById('contactInfo');
+        const selectedName = document.getElementById('selectedName');
+        const selectedNumber = document.getElementById('selectedNumber');
+
+        csvFile.addEventListener('change', handleFileSelect);
+        contactSelect.addEventListener('change', handleContactSelect);
+        dialButton.addEventListener('click', dialNumber);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                showStatus('No file selected', 'error');
+                return;
+            }
+
+            // Reset UI
+            contactsData = [];
+            contactSelect.innerHTML = '<option value="">Select a contact to dial...</option>';
+            contactSelect.disabled = true;
+            dialButton.disabled = true;
+            contactInfo.classList.remove('show');
+
+            showStatus('Reading file...', 'success');
+
+            const fileType = file.name.split('.').pop().toLowerCase();
+            
+            if (fileType === 'csv') {
+                parseCSV(file);
+            } else if (fileType === 'xlsx' || fileType === 'xls') {
+                parseExcel(file);
+            } else {
+                showStatus('Please select a CSV or Excel file (.csv, .xlsx, .xls)', 'error');
+                csvFile.value = ''; // Clear the file input
+            }
+        }
+
+        function parseCSV(file) {
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                dynamicTyping: false, // Keep as strings to preserve phone numbers
+                delimitersToGuess: [',', ';', '\t', '|'], // Try multiple delimiters
+                complete: function(results) {
+                    if (results.errors && results.errors.length > 0) {
+                        console.warn('CSV parsing warnings:', results.errors);
+                    }
+                    processData(results.data);
+                },
+                error: function(error) {
+                    showStatus('Error reading CSV file: ' + error.message, 'error');
+                    csvFile.value = ''; // Clear the file input
+                }
+            });
+        }
+
+        function parseExcel(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Get the first worksheet
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Convert to JSON
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+                        header: 1,  // Use first row as headers
+                        defval: '', // Default value for empty cells
+                        blankrows: false // Skip blank rows
+                    });
+                    
+                    if (jsonData.length === 0) {
+                        showStatus('Excel file appears to be empty', 'error');
+                        csvFile.value = '';
+                        return;
+                    }
+                    
+                    // Convert array format to object format (like CSV parsing)
+                    const headers = jsonData[0];
+                    const dataRows = jsonData.slice(1);
+                    
+                    const objectData = dataRows.map(row => {
+                        const obj = {};
+                        headers.forEach((header, index) => {
+                            obj[header] = row[index] || '';
+                        });
+                        return obj;
+                    });
+                    
+                    console.log('Excel headers:', headers); // Debug log
+                    console.log('Excel data rows:', objectData.slice(0, 3)); // Debug log (first 3 rows)
+                    
+                    processData(objectData);
+                    
+                } catch (error) {
+                    console.error('Excel parsing error:', error);
+                    showStatus('Error reading Excel file: ' + error.message, 'error');
+                    csvFile.value = '';
+                }
+            };
+            
+            reader.onerror = function() {
+                showStatus('Error reading Excel file', 'error');
+                csvFile.value = '';
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processData(data) {
+            contactsData = [];
+            
+            // Clear existing options
+            contactSelect.innerHTML = '<option value="">Select a contact to dial...</option>';
+            
+            if (!data || data.length === 0) {
+                showStatus('CSV file appears to be empty', 'error');
+                return;
+            }
+
+            console.log('CSV data:', data); // Debug log
+            console.log('First row keys:', Object.keys(data[0] || {})); // Debug log
+            
+            // Process each row
+            let validContacts = 0;
+            data.forEach((row, index) => {
+                // Look for name and mobile columns (case insensitive and flexible matching)
+                const allKeys = Object.keys(row);
+                
+                const nameKey = allKeys.find(key => {
+                    const lowerKey = key.toLowerCase().trim();
+                    return lowerKey.includes('name') || lowerKey === 'name' || lowerKey === 'contact';
+                });
+                
+                const mobileKey = allKeys.find(key => {
+                    const lowerKey = key.toLowerCase().trim();
+                    return lowerKey.includes('mobile') || 
+                           lowerKey.includes('phone') ||
+                           lowerKey.includes('number') ||
+                           lowerKey.includes('tel') ||
+                           lowerKey === 'mobile no' ||
+                           lowerKey === 'mobile number' ||
+                           lowerKey === 'phone number';
+                });
+
+                console.log(`Row ${index}: nameKey=${nameKey}, mobileKey=${mobileKey}`); // Debug log
+
+                if (nameKey && mobileKey) {
+                    const name = row[nameKey]?.toString().trim();
+                    const mobile = row[mobileKey]?.toString().trim();
+                    
+                    if (name && mobile && mobile !== '') {
+                        contactsData.push({ name, mobile, index: validContacts });
+                        
+                        const option = document.createElement('option');
+                        option.value = validContacts;
+                        option.textContent = `${name} - ${mobile}`;
+                        contactSelect.appendChild(option);
+                        validContacts++;
+                    }
+                }
+            });
+
+            if (validContacts > 0) {
+                contactSelect.disabled = false;
+                showStatus(`Successfully loaded ${validContacts} contacts`, 'success');
+            } else {
+                showStatus('No valid contacts found. Please ensure your CSV has columns like "Name" and "Mobile No" or "Phone Number".', 'error');
+                console.log('Available columns:', Object.keys(data[0] || {})); // Debug info
+            }
+        }
+
+        function handleContactSelect(event) {
+            const selectedIndex = event.target.value;
+            
+            if (selectedIndex === '') {
+                dialButton.disabled = true;
+                contactInfo.classList.remove('show');
+                return;
+            }
+
+            const contact = contactsData[selectedIndex];
+            if (contact) {
+                selectedName.textContent = contact.name;
+                selectedNumber.textContent = contact.mobile;
+                contactInfo.classList.add('show');
+                dialButton.disabled = false;
+            }
+        }
+
+        function dialNumber() {
+            const selectedIndex = contactSelect.value;
+            if (selectedIndex === '') return;
+
+            const contact = contactsData[selectedIndex];
+            if (!contact) return;
+
+            // Clean the phone number (remove spaces, dashes, etc.)
+            const cleanNumber = contact.mobile.replace(/[^\d+]/g, '');
+            
+            // Create the tel: URL
+            const telUrl = `tel:${cleanNumber}`;
+            
+            try {
+                // Open the dialer
+                window.open(telUrl, '_self');
+                showStatus(`Dialing ${contact.name} at ${contact.mobile}...`, 'success');
+            } catch (error) {
+                showStatus('Unable to open dialer. Please dial manually: ' + contact.mobile, 'error');
+            }
+        }
+
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message status-${type}`;
+            statusMessage.style.display = 'block';
+            
+            // Hide success messages after 3 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 3000);
+            }
+        }
+    </script>
+</body>
+</html>
